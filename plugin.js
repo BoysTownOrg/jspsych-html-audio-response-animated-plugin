@@ -2,17 +2,14 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
   const info = {
     name: "html-audio-response-animated",
     parameters: {
-      /** The HTML string to be displayed */
       stimulus: {
         type: jsPsychModule.ParameterType.HTML_STRING,
         default: undefined,
       },
-      /** How long to show the stimulus. */
       stimulus_duration: {
         type: jsPsychModule.ParameterType.INT,
         default: null,
       },
-      /** How long to show the trial. */
       recording_duration: {
         type: jsPsychModule.ParameterType.INT,
         default: 2000,
@@ -70,7 +67,6 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       const ro = new ResizeObserver((entries, observer) => {
         this.stimulus_start_time = performance.now();
         observer.unobserve(display_element);
-        //observer.disconnect();
       });
       ro.observe(display_element);
       let html = `<div id="jspsych-html-audio-response-animated-stimulus">${trial.stimulus}</div>`;
@@ -211,7 +207,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       // kill any remaining setTimeout handlers
       this.jsPsych.pluginAPI.clearAllTimeouts();
       // gather the data to store for the trial
-      var trial_data = {
+      const trial_data = {
         rt: this.rt,
         stimulus: trial.stimulus,
         response: this.response,
