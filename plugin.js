@@ -50,6 +50,10 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
     },
   };
 
+  class AnimationStub {
+    cancel() {}
+  }
+
   class Plugin {
     constructor(jsPsych) {
       this.jsPsych = jsPsych;
@@ -59,6 +63,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
 
     trial(display_element, trial) {
       this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
+      this.animation = new AnimationStub();
       this.setupRecordingEvents(display_element, trial);
       this.startRecording();
     }
@@ -90,6 +95,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       if (btn) {
         btn.addEventListener("click", () => {
           const end_time = performance.now();
+          this.animation.cancel();
           this.rt = Math.round(end_time - this.stimulus_start_time);
           this.stopRecording().then(() => {
             if (trial.allow_playback) {
@@ -134,26 +140,25 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
           }, trial.stimulus_duration);
         }
         // setup timer for ending the trial
-        if (trial.recording_duration !== null) {
-          document
-            .getElementById(trial.recording_animation_id)
-            .animate(
-              trial.recording_animation_keyframes,
-              trial.recording_duration
-            ).onfinish = () => {
-            // this check is necessary for cases where the
-            // done_button is clicked before the timer expires
-            if (this.recorder.state !== "inactive") {
-              this.stopRecording().then(() => {
-                if (trial.allow_playback) {
-                  this.showPlaybackControls(display_element, trial);
-                } else {
-                  this.endTrial(display_element, trial);
-                }
-              });
-            }
-          };
-        }
+        this.animation = document
+          .getElementById(trial.recording_animation_id)
+          .animate(
+            trial.recording_animation_keyframes,
+            trial.recording_duration
+          );
+        this.animation.onfinish = () => {
+          // this check is necessary for cases where the
+          // done_button is clicked before the timer expires
+          if (this.recorder.state !== "inactive") {
+            this.stopRecording().then(() => {
+              if (trial.allow_playback) {
+                this.showPlaybackControls(display_element, trial);
+              } else {
+                this.endTrial(display_element, trial);
+              }
+            });
+          }
+        };
       };
       this.recorder.addEventListener(
         "dataavailable",
