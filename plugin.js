@@ -2,10 +2,6 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
   const info = {
     name: "html-audio-response-animated",
     parameters: {
-      stimulus: {
-        type: jsPsychModule.ParameterType.HTML_STRING,
-        default: undefined,
-      },
       stimulus_duration: {
         type: jsPsychModule.ParameterType.INT,
         default: null,
@@ -38,20 +34,18 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         type: jsPsychModule.ParameterType.BOOL,
         default: false,
       },
-      recording_animation_keyframes: {
-        type: jsPsychModule.ParameterType.OBJECT,
-        default: [{ offsetDistance: "0%" }, { offsetDistance: "100%" }],
-        array: true,
-      },
-      recording_animation_id: {
-        type: jsPsychModule.ParameterType.STRING,
-        default: "jspsych-image-audio-response-light",
-      },
     },
   };
 
   class AnimationStub {
     cancel() {}
+  }
+
+  function clear(parent) {
+    // https://stackoverflow.com/a/3955238
+    while (parent.firstChild) {
+      parent.removeChild(parent.lastChild);
+    }
   }
 
   class Plugin {
@@ -74,11 +68,38 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         observer.unobserve(display_element);
       });
       ro.observe(display_element);
-      let html = `<div id="jspsych-html-audio-response-animated-stimulus">${trial.stimulus}</div>`;
+      const content = document.createElement("div");
+      content.id = "jspsych-html-audio-response-animated-stimulus";
+      const spanContainer = document.createElement("div");
+      spanContainer.style.height = "20px";
+      spanContainer.style.position = "relative";
+      spanContainer.style.width = "200px";
+      spanContainer.style.background = "#666666";
+      spanContainer.style.overflow = "hidden";
+      const outerSpan = document.createElement("span");
+      outerSpan.style.display = "block";
+      outerSpan.style.width = "100%";
+      outerSpan.style.height = "100%";
+      this.recordingLight = document.createElement("span");
+      this.recordingLight.style.backgroundColor = "#ff0000";
+      this.recordingLight.style.display = "block";
+      this.recordingLight.style.height = "100%";
+      this.recordingLight.style.width = "0%";
+      this.recordingLight.style.animationFillMode = "both";
+      outerSpan.append(this.recordingLight);
+      spanContainer.append(outerSpan);
+      content.append(spanContainer);
+      clear(display_element);
+      display_element.append(content);
       if (trial.show_done_button) {
-        html += `<p><button class="jspsych-btn" id="finish-trial">${trial.done_button_label}</button></p>`;
+        const buttonContainer = document.createElement("p");
+        const button = document.createElement("button");
+        button.className = "jspsych-btn";
+        button.id = "finish-trial";
+        button.textContent = trial.done_button_label;
+        buttonContainer.append(button);
+        display_element.append(buttonContainer);
       }
-      display_element.innerHTML = html;
     }
 
     hideStimulus(display_element) {
@@ -140,12 +161,10 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
           }, trial.stimulus_duration);
         }
         // setup timer for ending the trial
-        this.animation = document
-          .getElementById(trial.recording_animation_id)
-          .animate(
-            trial.recording_animation_keyframes,
-            trial.recording_duration
-          );
+        this.animation = this.recordingLight.animate(
+          [{ width: "0%" }, { width: "100%" }],
+          trial.recording_duration
+        );
         this.animation.onfinish = () => {
           // this check is necessary for cases where the
           // done_button is clicked before the timer expires
@@ -214,7 +233,6 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       // gather the data to store for the trial
       const trial_data = {
         rt: this.rt,
-        stimulus: trial.stimulus,
         response: this.response,
         estimated_stimulus_onset: Math.round(
           this.stimulus_start_time - this.recorder_start_time
