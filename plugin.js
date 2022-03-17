@@ -14,6 +14,10 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         type: jsPsychModule.ParameterType.BOOL,
         default: true,
       },
+      recording_light_width: {
+        type: jsPsychModule.ParameterType.STRING,
+        default: "200px",
+      },
       prompt_text: {
         type: jsPsychModule.ParameterType.STRING,
         default: "",
@@ -77,7 +81,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       const spanContainer = document.createElement("div");
       spanContainer.style.height = "20px";
       spanContainer.style.position = "relative";
-      spanContainer.style.width = "200px";
+      spanContainer.style.width = trial.recording_light_width;
       spanContainer.style.background = "#666666";
       spanContainer.style.overflow = "hidden";
       const outerSpan = document.createElement("span");
