@@ -14,6 +14,10 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         type: jsPsychModule.ParameterType.BOOL,
         default: true,
       },
+      prompt_text: {
+        type: jsPsychModule.ParameterType.STRING,
+        default: "",
+      },
       done_button_label: {
         type: jsPsychModule.ParameterType.STRING,
         default: "Continue",
@@ -100,6 +104,9 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         buttonContainer.append(button);
         display_element.append(buttonContainer);
       }
+      const prompt = document.createElement("p");
+      prompt.textContent = trial.prompt_text;
+      display_element.append(prompt);
     }
 
     hideStimulus(display_element) {
