@@ -83,9 +83,11 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       ro.observe(display_element);
       const content = document.createElement("div");
       content.id = "jspsych-html-audio-response-animated-stimulus";
+      content.style.display = "flex";
+      content.style.justifyContent = "center";
       const spanContainer = document.createElement("div");
+      spanContainer.style.alignSelf = "center";
       spanContainer.style.height = "20px";
-      spanContainer.style.position = "relative";
       spanContainer.style.width = trial.recording_light_width;
       spanContainer.style.background = "#666666";
       spanContainer.style.overflow = "hidden";
