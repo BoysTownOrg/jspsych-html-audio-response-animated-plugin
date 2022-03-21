@@ -22,6 +22,11 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         type: jsPsychModule.ParameterType.STRING,
         default: "",
       },
+      prompt: {
+        type: jsPsychModule.ParameterType.HTML_STRING,
+        pretty_name: "Prompt",
+        default: null,
+      },
       done_button_label: {
         type: jsPsychModule.ParameterType.STRING,
         default: "Continue",
@@ -108,9 +113,18 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         buttonContainer.append(button);
         display_element.append(buttonContainer);
       }
-      const prompt = document.createElement("p");
-      prompt.textContent = trial.prompt_text;
-      display_element.append(prompt);
+      if (trial.prompt !== null) {
+        const parser = new DOMParser();
+        const promptDocument = parser.parseFromString(
+          trial.prompt,
+          "text/html"
+        );
+        display_element.append(promptDocument.body.firstChild);
+      } else if (trial.prompt_text !== "") {
+        const prompt = document.createElement("p");
+        prompt.textContent = trial.prompt_text;
+        display_element.append(prompt);
+      }
     }
 
     hideStimulus(display_element) {
