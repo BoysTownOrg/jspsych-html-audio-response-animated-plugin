@@ -106,15 +106,6 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       content.append(spanContainer);
       clear(display_element);
       display_element.append(content);
-      if (trial.show_done_button) {
-        const buttonContainer = document.createElement("p");
-        const button = document.createElement("button");
-        button.className = "jspsych-btn";
-        button.id = "finish-trial";
-        button.textContent = trial.done_button_label;
-        buttonContainer.append(button);
-        display_element.append(buttonContainer);
-      }
       if (trial.prompt !== null) {
         const parser = new DOMParser();
         const promptDocument = parser.parseFromString(
@@ -126,6 +117,15 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         const prompt = document.createElement("p");
         prompt.textContent = trial.prompt_text;
         display_element.append(prompt);
+      }
+      if (trial.show_done_button) {
+        const buttonContainer = document.createElement("p");
+        const button = document.createElement("button");
+        button.className = "jspsych-btn";
+        button.id = "finish-trial";
+        button.textContent = trial.done_button_label;
+        buttonContainer.append(button);
+        display_element.append(buttonContainer);
       }
     }
 
