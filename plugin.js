@@ -70,9 +70,21 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
 
     trial(display_element, trial) {
       this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
-      this.animation = new AnimationStub();
-      this.setupRecordingEvents(display_element, trial);
-      this.startRecording();
+      const audioContext = this.jsPsych.pluginAPI.audioContext();
+      audioContext.audioWorklet.addModule("volume-processor.js").then(() => {
+        let microphone = audioContext.createMediaStreamSource(
+          this.recorder.stream,
+        );
+        const node = new AudioWorkletNode(audioContext, "volume-processor");
+        node.port.onmessage = (event) => {
+          console.log(event.data.rms);
+        };
+        microphone.connect(node); //.connect(audioContext.destination);
+
+        this.animation = new AnimationStub();
+        this.setupRecordingEvents(display_element, trial);
+        this.startRecording();
+      });
     }
 
     showDisplay(display_element, trial) {
@@ -110,7 +122,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         const parser = new DOMParser();
         const promptDocument = parser.parseFromString(
           trial.prompt,
-          "text/html"
+          "text/html",
         );
         display_element.append(promptDocument.body.firstChild);
       } else if (trial.prompt_text !== "") {
@@ -131,7 +143,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
 
     hideStimulus(display_element) {
       const el = display_element.querySelector(
-        "#jspsych-html-audio-response-animated-stimulus"
+        "#jspsych-html-audio-response-animated-stimulus",
       );
       if (el) {
         el.style.visibility = "hidden";
@@ -190,7 +202,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         // setup timer for ending the trial
         this.animation = this.recordingLight.animate(
           [{ width: "0%" }, { width: "100%" }],
-          trial.recording_duration
+          trial.recording_duration,
         );
         this.animation.onfinish = () => {
           // this check is necessary for cases where the
@@ -208,7 +220,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       };
       this.recorder.addEventListener(
         "dataavailable",
-        this.data_available_handler
+        this.data_available_handler,
       );
       this.recorder.addEventListener("stop", this.stop_event_handler);
       this.recorder.addEventListener("start", this.start_event_handler);
@@ -251,7 +263,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       // clear recordering event handler
       this.recorder.removeEventListener(
         "dataavailable",
-        this.data_available_handler
+        this.data_available_handler,
       );
       this.recorder.removeEventListener("start", this.start_event_handler);
       this.recorder.removeEventListener("stop", this.stop_event_handler);
@@ -262,7 +274,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
         rt: this.rt,
         response: this.response,
         estimated_stimulus_onset: Math.round(
-          this.stimulus_start_time - this.recorder_start_time
+          this.stimulus_start_time - this.recorder_start_time,
         ),
       };
       if (trial.save_audio_url) {
