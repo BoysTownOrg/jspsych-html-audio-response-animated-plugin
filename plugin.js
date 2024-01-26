@@ -70,21 +70,26 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
 
     trial(display_element, trial) {
       this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
-      const audioContext = this.jsPsych.pluginAPI.audioContext();
-      audioContext.audioWorklet.addModule("volume-processor.js").then(() => {
-        let microphone = audioContext.createMediaStreamSource(
-          this.recorder.stream,
-        );
-        const node = new AudioWorkletNode(audioContext, "volume-processor");
-        node.port.onmessage = (event) => {
-          console.log(event.data.rms);
-        };
-        microphone.connect(node); //.connect(audioContext.destination);
+      this.audioContext = new AudioContext();
+      this.audioContext.audioWorklet
+        .addModule("volume-processor.js")
+        .then(() => {
+          let microphone = this.audioContext.createMediaStreamSource(
+            this.recorder.stream,
+          );
+          const volumeProcessorNode = new AudioWorkletNode(
+            this.audioContext,
+            "volume-processor",
+          );
+          volumeProcessorNode.port.onmessage = (event) => {
+            console.log(event.data.rms);
+          };
+          microphone.connect(volumeProcessorNode);
 
-        this.animation = new AnimationStub();
-        this.setupRecordingEvents(display_element, trial);
-        this.startRecording();
-      });
+          this.animation = new AnimationStub();
+          this.setupRecordingEvents(display_element, trial);
+          this.startRecording();
+        });
     }
 
     showDisplay(display_element, trial) {
@@ -285,6 +290,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       // clear the display
       display_element.innerHTML = "";
       // move on to the next trial
+      this.audioContext.close();
       this.jsPsych.finishTrial(trial_data);
     }
   }

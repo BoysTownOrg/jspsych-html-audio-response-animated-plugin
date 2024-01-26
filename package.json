@@ -1,0 +1,6 @@
+{
+  "dependencies": { "jspsych": "^7.3.4" },
+  "devDependencies": {
+    "@types/audioworklet": "^0.0.53"
+  }
+}
