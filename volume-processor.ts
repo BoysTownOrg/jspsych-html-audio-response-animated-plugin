@@ -1,9 +1,11 @@
 class VolumeProcessor extends AudioWorkletProcessor {
   samplesSincePost: number;
+  squaredSum: number;
 
   constructor() {
     super();
     this.samplesSincePost = 0;
+    this.squaredSum = 0;
   }
 
   process(
@@ -15,17 +17,18 @@ class VolumeProcessor extends AudioWorkletProcessor {
       const input = inputs[0];
       if (input.length > 0) {
         const channel = input[0];
-        if (channel.length > 0) {
-          const rms = Math.sqrt(
-            channel.reduce((accumulator, x) => accumulator + x * x, 0) /
-              channel.length,
-          );
-          this.samplesSincePost += channel.length;
+        this.squaredSum = channel.reduce(
+          (accumulator, x) => accumulator + x * x,
+          this.squaredSum,
+        );
+        this.samplesSincePost += channel.length;
 
-          if (this.samplesSincePost / sampleRate > 0.125) {
-            this.port.postMessage({ rms });
-            this.samplesSincePost = 0;
-          }
+        if (this.samplesSincePost / sampleRate > 0.125) {
+          const dB =
+            20 * Math.log10(Math.sqrt(this.squaredSum / this.samplesSincePost));
+          this.port.postMessage({ dB });
+          this.samplesSincePost = 0;
+          this.squaredSum = 0;
         }
       }
     }

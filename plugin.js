@@ -82,7 +82,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
             "volume-processor",
           );
           volumeProcessorNode.port.onmessage = (event) => {
-            console.log(event.data.rms);
+            console.log(event.data.dB);
           };
           microphone.connect(volumeProcessorNode);
 
