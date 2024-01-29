@@ -51,7 +51,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
   };
 
   class AnimationStub {
-    cancel() {}
+    cancel() { }
   }
 
   function clear(parent) {
@@ -77,14 +77,11 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
           let microphone = this.audioContext.createMediaStreamSource(
             this.recorder.stream,
           );
-          const volumeProcessorNode = new AudioWorkletNode(
+          this.volumeProcessorNode = new AudioWorkletNode(
             this.audioContext,
             "volume-processor",
           );
-          volumeProcessorNode.port.onmessage = (event) => {
-            console.log(event.data.dB);
-          };
-          microphone.connect(volumeProcessorNode);
+          microphone.connect(this.volumeProcessorNode);
 
           this.animation = new AnimationStub();
           this.setupRecordingEvents(display_element, trial);
@@ -102,27 +99,63 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
       content.id = "jspsych-html-audio-response-animated-stimulus";
       content.style.display = "flex";
       content.style.justifyContent = "center";
-      const spanContainer = document.createElement("div");
-      spanContainer.style.alignSelf = "center";
-      spanContainer.style.height = "20px";
-      spanContainer.style.width = trial.recording_light_width;
-      spanContainer.style.background = "#666666";
-      spanContainer.style.overflow = "hidden";
-      const outerSpan = document.createElement("span");
-      outerSpan.style.display = "block";
-      outerSpan.style.width = "100%";
-      outerSpan.style.height = "100%";
+
+      const recordingLightContainer = document.createElement("div");
+      recordingLightContainer.style.alignSelf = "center";
+      recordingLightContainer.style.height = "20px";
+      recordingLightContainer.style.width = trial.recording_light_width;
+      recordingLightContainer.style.background = "#666666";
+      recordingLightContainer.style.overflow = "hidden";
+      const outerRecordingLight = document.createElement("span");
+      outerRecordingLight.style.display = "block";
+      outerRecordingLight.style.width = "100%";
+      outerRecordingLight.style.height = "100%";
       this.recordingLight = document.createElement("span");
       this.recordingLight.style.backgroundColor = "#ff0000";
       this.recordingLight.style.display = "block";
       this.recordingLight.style.height = "100%";
       this.recordingLight.style.width = "0%";
       this.recordingLight.style.animationFillMode = "both";
-      outerSpan.append(this.recordingLight);
-      spanContainer.append(outerSpan);
-      content.append(spanContainer);
+      outerRecordingLight.append(this.recordingLight);
+      recordingLightContainer.append(outerRecordingLight);
+
+      const levelIndicatorContainer = document.createElement("div");
+      levelIndicatorContainer.style.alignSelf = "center";
+      levelIndicatorContainer.style.height = "200px";
+      levelIndicatorContainer.style.width = "20px";
+      levelIndicatorContainer.style.background = "#666666";
+      levelIndicatorContainer.style.overflow = "hidden";
+      const outerLevelIndicator = document.createElement("span");
+      outerLevelIndicator.style.display = "block";
+      outerLevelIndicator.style.width = "100%";
+      outerLevelIndicator.style.height = "100%";
+      const levelIndicator = document.createElement("span");
+      levelIndicator.style.backgroundColor = "#00ff00";
+      levelIndicator.style.display = "block";
+      levelIndicator.style.height = "0%";
+      levelIndicator.style.width = "100%";
+      levelIndicator.style.animationFillMode = "both";
+      outerLevelIndicator.append(levelIndicator);
+      levelIndicatorContainer.append(outerLevelIndicator);
+
+      const spanContainers = document.createElement("div");
+      spanContainers.style.display = "grid";
+      spanContainers.style.columnGap = "20px";
+      recordingLightContainer.style.gridColumn = "1";
+      levelIndicatorContainer.style.gridColumn = "2";
+      levelIndicatorContainer.style.transform = "rotate(180deg)";
+
+      spanContainers.append(recordingLightContainer);
+      spanContainers.append(levelIndicatorContainer);
+      content.append(spanContainers)
+
       clear(display_element);
       display_element.append(content);
+
+      this.volumeProcessorNode.port.onmessage = (event) => {
+        levelIndicator.style.height = `${100 * (event.data.dB + 80) / 80}%`;
+      };
+
       if (trial.prompt !== null) {
         const parser = new DOMParser();
         const promptDocument = parser.parseFromString(

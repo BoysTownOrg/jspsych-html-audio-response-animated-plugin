@@ -23,7 +23,7 @@ class VolumeProcessor extends AudioWorkletProcessor {
         );
         this.samplesSincePost += channel.length;
 
-        if (this.samplesSincePost / sampleRate > 0.125) {
+        if (this.samplesSincePost / sampleRate > 0.0625) {
           const dB =
             20 * Math.log10(Math.sqrt(this.squaredSum / this.samplesSincePost));
           this.port.postMessage({ dB });
