@@ -81,6 +81,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
   start_event_handler;
   recorder_start_time;
   audioContext: AudioContext;
+  volumeProcessorNode: AudioWorkletNode;
 
   constructor(jsPsych: JsPsych) {
     this.jsPsych = jsPsych;
@@ -89,24 +90,24 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
-    this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
-    this.audioContext = new AudioContext();
-    this.audioContext.audioWorklet.addModule("volume-processor.js").then(() => {
-      let microphone = this.audioContext.createMediaStreamSource(
-        this.recorder.stream,
-      );
-      const volumeProcessorNode = new AudioWorkletNode(
-        this.audioContext,
-        "volume-processor",
-      );
-      volumeProcessorNode.port.onmessage = (event) => {
-        console.log(event.data.rms);
-      };
-      microphone.connect(volumeProcessorNode);
+    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+      this.jsPsych.pluginAPI.initializeMicrophoneRecorder(stream);
+      this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
+      this.audioContext = new AudioContext();
+      this.audioContext.audioWorklet
+        .addModule("volume-processor.js")
+        .then(() => {
+          let microphone = this.audioContext.createMediaStreamSource(stream);
+          this.volumeProcessorNode = new AudioWorkletNode(
+            this.audioContext,
+            "volume-processor",
+          );
+          microphone.connect(this.volumeProcessorNode);
 
-      this.animation = new AnimationStub();
-      this.setupRecordingEvents(display_element, trial);
-      this.startRecording();
+          this.animation = new AnimationStub();
+          this.setupRecordingEvents(display_element, trial);
+          this.startRecording();
+        });
     });
   }
 
@@ -120,41 +121,70 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
     content.id = "jspsych-html-audio-response-animated-stimulus";
     content.style.display = "flex";
     content.style.justifyContent = "center";
-    const spanContainer = document.createElement("div");
-    spanContainer.style.alignSelf = "center";
-    spanContainer.style.height = "20px";
-    if (trial.recording_light_width)
-      spanContainer.style.width = trial.recording_light_width;
-    spanContainer.style.background = "#666666";
-    spanContainer.style.overflow = "hidden";
-    const outerSpan = document.createElement("span");
-    outerSpan.style.display = "block";
-    outerSpan.style.width = "100%";
-    outerSpan.style.height = "100%";
+
+    const recordingLightContainer = document.createElement("div");
+    recordingLightContainer.style.alignSelf = "center";
+    recordingLightContainer.style.height = "20px";
+    recordingLightContainer.style.width = trial.recording_light_width;
+    recordingLightContainer.style.background = "#666666";
+    recordingLightContainer.style.overflow = "hidden";
+    const outerRecordingLight = document.createElement("span");
+    outerRecordingLight.style.display = "block";
+    outerRecordingLight.style.width = "100%";
+    outerRecordingLight.style.height = "100%";
     this.recordingLight = document.createElement("span");
     this.recordingLight.style.backgroundColor = "#ff0000";
     this.recordingLight.style.display = "block";
     this.recordingLight.style.height = "100%";
     this.recordingLight.style.width = "0%";
     this.recordingLight.style.animationFillMode = "both";
-    outerSpan.append(this.recordingLight);
-    spanContainer.append(outerSpan);
-    content.append(spanContainer);
+    outerRecordingLight.append(this.recordingLight);
+    recordingLightContainer.append(outerRecordingLight);
+
+    const levelIndicatorContainer = document.createElement("div");
+    levelIndicatorContainer.style.alignSelf = "center";
+    levelIndicatorContainer.style.height = "200px";
+    levelIndicatorContainer.style.width = "20px";
+    levelIndicatorContainer.style.background = "#666666";
+    levelIndicatorContainer.style.overflow = "hidden";
+    const outerLevelIndicator = document.createElement("span");
+    outerLevelIndicator.style.display = "block";
+    outerLevelIndicator.style.width = "100%";
+    outerLevelIndicator.style.height = "100%";
+    const levelIndicator = document.createElement("span");
+    levelIndicator.style.backgroundColor = "#00ff00";
+    levelIndicator.style.display = "block";
+    levelIndicator.style.height = "0%";
+    levelIndicator.style.width = "100%";
+    levelIndicator.style.animationFillMode = "both";
+    outerLevelIndicator.append(levelIndicator);
+    levelIndicatorContainer.append(outerLevelIndicator);
+
+    const spanContainers = document.createElement("div");
+    spanContainers.style.display = "grid";
+    spanContainers.style.columnGap = "20px";
+    recordingLightContainer.style.gridColumn = "1";
+    levelIndicatorContainer.style.gridColumn = "2";
+    levelIndicatorContainer.style.transform = "rotate(180deg)";
+
+    spanContainers.append(recordingLightContainer);
+    spanContainers.append(levelIndicatorContainer);
+    content.append(spanContainers);
+
     clear(display_element);
     display_element.append(content);
+
+    this.volumeProcessorNode.port.onmessage = (event) => {
+      levelIndicator.style.height = `${(100 * (event.data.dB + 80)) / 80}%`;
+    };
+
     if (trial.prompt !== null) {
       const parser = new DOMParser();
-      if (trial.prompt) {
-        const promptDocument = parser.parseFromString(
-          trial.prompt,
-          "text/html",
-        );
-        if (promptDocument.body.firstChild)
-          display_element.append(promptDocument.body.firstChild);
-      }
+      const promptDocument = parser.parseFromString(trial.prompt, "text/html");
+      display_element.append(promptDocument.body.firstChild);
     } else if (trial.prompt_text !== "") {
       const prompt = document.createElement("p");
-      if (trial.prompt_text) prompt.textContent = trial.prompt_text;
+      prompt.textContent = trial.prompt_text;
       display_element.append(prompt);
     }
     if (trial.show_done_button) {
@@ -162,14 +192,14 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
       const button = document.createElement("button");
       button.className = "jspsych-btn";
       button.id = "finish-trial";
-      if (trial.done_button_label) button.textContent = trial.done_button_label;
+      button.textContent = trial.done_button_label;
       buttonContainer.append(button);
       display_element.append(buttonContainer);
     }
   }
 
   hideStimulus(display_element: HTMLElement) {
-    const el = display_element.querySelector(
+    const el: HTMLElement = display_element.querySelector(
       "#jspsych-html-audio-response-animated-stimulus",
     );
     if (el) {
@@ -208,11 +238,9 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
       this.audio_url = URL.createObjectURL(data);
       const reader = new FileReader();
       reader.addEventListener("load", () => {
-        if (reader.result) {
-          const base64 = reader.result.split(",")[1];
-          this.response = base64;
-          this.load_resolver();
-        }
+        const base64 = (reader.result as string).split(",")[1];
+        this.response = base64;
+        this.load_resolver();
       });
       reader.readAsDataURL(data);
     };
@@ -223,7 +251,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
       this.showDisplay(display_element, trial);
       this.addButtonEvent(display_element, trial);
       // setup timer for hiding the stimulus
-      if (trial.stimulus_duration) {
+      if (trial.stimulus_duration !== null) {
         this.jsPsych.pluginAPI.setTimeout(() => {
           this.hideStimulus(display_element);
         }, trial.stimulus_duration);
@@ -272,20 +300,18 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
       <button id="record-again" class="jspsych-btn">${trial.record_again_button_label}</button>
       <button id="continue" class="jspsych-btn">${trial.accept_button_label}</button>
     `;
-    const recordAgainButton = display_element.querySelector("#record-again");
-    if (recordAgainButton) {
-      recordAgainButton.addEventListener("click", () => {
+    display_element
+      .querySelector("#record-again")
+      .addEventListener("click", () => {
         // release object url to save memory
         URL.revokeObjectURL(this.audio_url);
         this.startRecording();
       });
-    }
-    const continueButton = display_element.querySelector("#continue");
-    if (continueButton) {
-      continueButton.addEventListener("click", () => {
-        this.endTrial(display_element, trial);
-      });
-    }
+    display_element.querySelector("#continue").addEventListener("click", () => {
+      this.endTrial(display_element, trial);
+    });
+    // const audio = display_element.querySelector('#playback');
+    // audio.src =
   }
 
   endTrial(display_element: HTMLElement, trial: TrialType<Info>) {
@@ -299,7 +325,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
     // kill any remaining setTimeout handlers
     this.jsPsych.pluginAPI.clearAllTimeouts();
     // gather the data to store for the trial
-    const trial_data = {
+    const trial_data: any = {
       rt: this.rt,
       response: this.response,
       estimated_stimulus_onset: Math.round(
