@@ -37,7 +37,9 @@ class VolumeProcessor extends AudioWorkletProcessor {
     // should return false from the process method to allow the presence of
     // active input nodes and references to the node to determine whether
     // it can be garbage-collected."
-    return false;
+
+    // However, on Chrome this doesn't seem to work -.-. Therefore will return true.
+    return true;
   }
 }
 

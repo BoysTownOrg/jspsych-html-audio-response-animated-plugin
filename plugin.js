@@ -51,7 +51,7 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
   };
 
   class AnimationStub {
-    cancel() { }
+    cancel() {}
   }
 
   function clear(parent) {
@@ -69,24 +69,25 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
     }
 
     trial(display_element, trial) {
-      this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
-      this.audioContext = new AudioContext();
-      this.audioContext.audioWorklet
-        .addModule("volume-processor.js")
-        .then(() => {
-          let microphone = this.audioContext.createMediaStreamSource(
-            this.recorder.stream,
-          );
-          this.volumeProcessorNode = new AudioWorkletNode(
-            this.audioContext,
-            "volume-processor",
-          );
-          microphone.connect(this.volumeProcessorNode);
+      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+        this.jsPsych.pluginAPI.initializeMicrophoneRecorder(stream);
+        this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
+        this.audioContext = new AudioContext();
+        this.audioContext.audioWorklet
+          .addModule("volume-processor.js")
+          .then(() => {
+            let microphone = this.audioContext.createMediaStreamSource(stream);
+            this.volumeProcessorNode = new AudioWorkletNode(
+              this.audioContext,
+              "volume-processor",
+            );
+            microphone.connect(this.volumeProcessorNode);
 
-          this.animation = new AnimationStub();
-          this.setupRecordingEvents(display_element, trial);
-          this.startRecording();
-        });
+            this.animation = new AnimationStub();
+            this.setupRecordingEvents(display_element, trial);
+            this.startRecording();
+          });
+      });
     }
 
     showDisplay(display_element, trial) {
@@ -147,13 +148,13 @@ function htmlAudioResponseAnimatedPlugin(jsPsychModule) {
 
       spanContainers.append(recordingLightContainer);
       spanContainers.append(levelIndicatorContainer);
-      content.append(spanContainers)
+      content.append(spanContainers);
 
       clear(display_element);
       display_element.append(content);
 
       this.volumeProcessorNode.port.onmessage = (event) => {
-        levelIndicator.style.height = `${100 * (event.data.dB + 80) / 80}%`;
+        levelIndicator.style.height = `${(100 * (event.data.dB + 80)) / 80}%`;
       };
 
       if (trial.prompt !== null) {
