@@ -56,6 +56,8 @@ const info = <const>{
 
 type Info = typeof info;
 
+declare const jatos: any;
+
 class AnimationStub {
   cancel() {}
 }
@@ -90,25 +92,37 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
   }
 
   trial(display_element: HTMLElement, trial: TrialType<Info>) {
-    navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-      this.jsPsych.pluginAPI.initializeMicrophoneRecorder(stream);
-      this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
-      this.audioContext = new AudioContext();
-      this.audioContext.audioWorklet
-        .addModule("volume-processor.js")
-        .then(() => {
-          let microphone = this.audioContext.createMediaStreamSource(stream);
-          this.volumeProcessorNode = new AudioWorkletNode(
-            this.audioContext,
-            "volume-processor",
-          );
-          microphone.connect(this.volumeProcessorNode);
+    navigator.mediaDevices
+      .getUserMedia({ audio: this.getAudioConstraints() })
+      .then((stream) => {
+        this.jsPsych.pluginAPI.initializeMicrophoneRecorder(stream);
+        this.recorder = this.jsPsych.pluginAPI.getMicrophoneRecorder();
+        this.audioContext = new AudioContext();
+        this.audioContext.audioWorklet
+          .addModule("volume-processor.js")
+          .then(() => {
+            let microphone = this.audioContext.createMediaStreamSource(stream);
+            this.volumeProcessorNode = new AudioWorkletNode(
+              this.audioContext,
+              "volume-processor",
+            );
+            microphone.connect(this.volumeProcessorNode);
 
-          this.animation = new AnimationStub();
-          this.setupRecordingEvents(display_element, trial);
-          this.startRecording();
-        });
-    });
+            this.animation = new AnimationStub();
+            this.setupRecordingEvents(display_element, trial);
+            this.startRecording();
+          });
+      });
+  }
+
+  getAudioConstraints(): boolean | MediaTrackConstraints {
+    if ("micID" in jatos.studySessionData) {
+      return {
+        deviceId: jatos.studySessionData.micID,
+      };
+    } else {
+      return true;
+    }
   }
 
   showDisplay(display_element: HTMLElement, trial: TrialType<Info>) {
@@ -190,6 +204,10 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
     if (trial.show_done_button) {
       const buttonContainer = document.createElement("p");
       const button = document.createElement("button");
+      button.style.visibility = "hidden";
+      this.jsPsych.pluginAPI.setTimeout(() => {
+        button.style.visibility = "visible";
+      }, 2000);
       button.className = "jspsych-btn";
       button.id = "finish-trial";
       button.textContent = trial.done_button_label;
