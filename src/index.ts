@@ -43,6 +43,10 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "Continue",
     },
+    loop_button_label: {
+      type: ParameterType.STRING,
+      default: "Loop",
+    },
     allow_playback: {
       type: ParameterType.BOOL,
       default: false,
@@ -71,6 +75,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
   jsPsych: JsPsych;
   recorder: MediaRecorder;
   rt: number | null;
+  button_number: number;
   recorded_data_chunks;
   animation;
   stimulus_start_time;
@@ -88,6 +93,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
   constructor(jsPsych: JsPsych) {
     this.jsPsych = jsPsych;
     this.rt = null;
+    this.button_number = null;
     this.recorded_data_chunks = [];
   }
 
@@ -317,6 +323,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
       <p><audio id="playback" src="${this.audio_url}" controls></audio></p>
       <button id="record-again" class="jspsych-btn">${trial.record_again_button_label}</button>
       <button id="continue" class="jspsych-btn">${trial.accept_button_label}</button>
+      <button id="loop" class="jspsych-btn">${trial.loop_button_label}</button>
     `;
     display_element
       .querySelector("#record-again")
@@ -326,6 +333,11 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
         this.startRecording();
       });
     display_element.querySelector("#continue").addEventListener("click", () => {
+      this.button_number = 1;
+      this.endTrial(display_element, trial);
+    });
+    display_element.querySelector("#loop").addEventListener("click", () => {
+      this.button_number = 2;
       this.endTrial(display_element, trial);
     });
     // const audio = display_element.querySelector('#playback');
@@ -345,6 +357,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
     // gather the data to store for the trial
     const trial_data: any = {
       rt: this.rt,
+      button_number: this.button_number,
       response: this.response,
       estimated_stimulus_onset: Math.round(
         this.stimulus_start_time - this.recorder_start_time,
