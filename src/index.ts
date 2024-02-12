@@ -63,7 +63,7 @@ type Info = typeof info;
 declare const jatos: any;
 
 class AnimationStub {
-  cancel() {}
+  cancel() { }
 }
 
 function clear(parent: HTMLElement) {
@@ -163,10 +163,11 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
 
     const levelIndicatorContainer = document.createElement("div");
     levelIndicatorContainer.style.alignSelf = "center";
-    levelIndicatorContainer.style.height = "200px";
+    levelIndicatorContainer.style.height = "100px";
     levelIndicatorContainer.style.width = "20px";
     levelIndicatorContainer.style.background = "#666666";
     levelIndicatorContainer.style.overflow = "hidden";
+    levelIndicatorContainer.style.transform = "rotate(180deg)";
     const outerLevelIndicator = document.createElement("span");
     outerLevelIndicator.style.display = "block";
     outerLevelIndicator.style.width = "100%";
@@ -180,16 +181,20 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
     outerLevelIndicator.append(levelIndicator);
     levelIndicatorContainer.append(outerLevelIndicator);
 
-    const spanContainers = document.createElement("div");
-    spanContainers.style.display = "grid";
-    spanContainers.style.columnGap = "20px";
-    recordingLightContainer.style.gridColumn = "1";
-    levelIndicatorContainer.style.gridColumn = "2";
-    levelIndicatorContainer.style.transform = "rotate(180deg)";
+    const levelIndicatorLabel = document.createElement("div");
+    levelIndicatorLabel.textContent = "mic";
 
-    spanContainers.append(recordingLightContainer);
-    spanContainers.append(levelIndicatorContainer);
-    content.append(spanContainers);
+    const levelIndicatorWithLabel = document.createElement("div");
+    levelIndicatorWithLabel.style.position = "absolute";
+    levelIndicatorWithLabel.style.left = "35%";
+    levelIndicatorWithLabel.style.bottom = "30%";
+    levelIndicatorWithLabel.style.display = "flex";
+    levelIndicatorWithLabel.style.flexDirection = "column";
+    levelIndicatorWithLabel.append(levelIndicatorContainer);
+    levelIndicatorWithLabel.append(levelIndicatorLabel);
+
+    content.append(recordingLightContainer);
+    content.append(levelIndicatorWithLabel);
 
     clear(display_element);
     display_element.append(content);
