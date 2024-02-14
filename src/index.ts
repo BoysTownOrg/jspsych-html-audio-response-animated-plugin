@@ -63,6 +63,10 @@ const info = <const>{
       type: ParameterType.STRING,
       default: "30%",
     },
+    level_indicator_height: {
+      type: ParameterType.STRING,
+      default: "100px",
+    },
   },
 };
 
@@ -171,7 +175,7 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
 
     const levelIndicatorContainer = document.createElement("div");
     levelIndicatorContainer.style.alignSelf = "center";
-    levelIndicatorContainer.style.height = "100px";
+    levelIndicatorContainer.style.height = trial.level_indicator_height;
     levelIndicatorContainer.style.width = "20px";
     levelIndicatorContainer.style.background = "#666666";
     levelIndicatorContainer.style.overflow = "hidden";
