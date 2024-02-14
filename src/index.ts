@@ -55,6 +55,14 @@ const info = <const>{
       type: ParameterType.BOOL,
       default: false,
     },
+    level_indicator_left: {
+      type: ParameterType.STRING,
+      default: "35%",
+    },
+    level_indicator_bottom: {
+      type: ParameterType.STRING,
+      default: "30%",
+    },
   },
 };
 
@@ -186,8 +194,8 @@ class HtmlAudioResponseAnimatedPlugin implements JsPsychPlugin<Info> {
 
     const levelIndicatorWithLabel = document.createElement("div");
     levelIndicatorWithLabel.style.position = "absolute";
-    levelIndicatorWithLabel.style.left = "35%";
-    levelIndicatorWithLabel.style.bottom = "30%";
+    levelIndicatorWithLabel.style.left = trial.level_indicator_left;
+    levelIndicatorWithLabel.style.bottom = trial.level_indicator_bottom;
     levelIndicatorWithLabel.style.display = "flex";
     levelIndicatorWithLabel.style.flexDirection = "column";
     levelIndicatorWithLabel.append(levelIndicatorContainer);
